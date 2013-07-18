@@ -1,7 +1,6 @@
 var http   = require('http');
 var url    = require('url');
 var qs     = require('querystring');
-var uuid   = require('node-uuid').v4;
 var static = require('node-static');
 var ENV    = process.env;
 
@@ -17,7 +16,6 @@ if (!CLIENT_SECRET)   { throw "Requires READMILL_CLIENT_SECRET environment varia
 if (!CLIENT_CALLBACK) { throw "Requires READMILL_CLIENT_CALLBACK environment variable"; }
 
 function authorize(req, res) {
-  var id = uuid();
   var query = {
     client_id: CLIENT_ID,
     scope: "non-expiring",

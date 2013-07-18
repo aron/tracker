@@ -1,7 +1,9 @@
-var http = require('http');
-var url  = require('url');
-var qs   = require('querystring');
-var ENV  = process.env;
+var http   = require('http');
+var url    = require('url');
+var qs     = require('querystring');
+var uuid   = require('node-uuid').v4;
+var static = require('node-static');
+var ENV    = process.env;
 
 var AUTH_HOST       = "readmill.com";
 var CLIENT_DOMAIN   = ENV["READMILL_CLIENT_DOMAIN"];
@@ -15,24 +17,18 @@ if (!CLIENT_SECRET)   { throw "Requires READMILL_CLIENT_SECRET environment varia
 if (!CLIENT_CALLBACK) { throw "Requires READMILL_CLIENT_CALLBACK environment variable"; }
 
 function authorize(req, res) {
-  var parsed   = url.parse(req.url, true);
-  var query    = parsed.query;
-  var pathname = parsed.pathname;
-
-  // Fail early if callback uri is invalid.
-  if (CLIENT_CALLBACK.split("?")[0] === query["redirect_uri"].split("?")[0]) {
-    res.writeHead(400);
-    res.end();
-    return;
-  }
-
-  query.redirect_uri = CLIENT_DOMAIN + "/auth/readmill/callback";
-  query.scope = "non-expiring";
+  var id = uuid();
+  var query = {
+    client_id: CLIENT_ID,
+    scope: "non-expiring",
+    response_type: "code",
+    redirect_uri: CLIENT_DOMAIN + "/auth/readmill/callback"
+  };
 
   var location = url.format({
     host: AUTH_HOST,
     query: query,
-    pathname: pathname
+    pathname: "/oauth/authorize"
   });
 
   res.writeHead(303, {"Location": location});
@@ -40,12 +36,13 @@ function authorize(req, res) {
 }
 
 function authCallback(req, res) {
-  var parsed = url.parse(req.url, true);
-  var code   = parsed.query.code;
-  var error  = parsed.query.error;
+  var parsed     = url.parse(req.url, true);
+  var code       = parsed.query.code;
+  var error      = parsed.query.error;
 
   function respond(hash) {
-    parts = url.parse(redirect, true);
+    parts = url.parse('/callback.html', true);
+    parts.hash = hash
     res.writeHead(303, {"Location": url.format(parts)});
     res.end();
   }
@@ -54,21 +51,20 @@ function authCallback(req, res) {
     return respond(qs.stringify({error: error}));
   }
 
-  var query = {
+  var query = qs.stringify({
     grant_type: "authorization_code",
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
-    redirect_uri: CLIENT_DOMAIN + "/callback",
+    redirect_uri: CLIENT_DOMAIN + "/auth/readmill/callback",
     code: code
-  };
+  });
 
-  var queryString = qs.stringify(query);
   var options = {
     host: AUTH_HOST,
     path: "/oauth/token",
     method: "POST",
     headers: {
-      "Content-Length": queryString.length,
+      "Content-Length": query.length,
       "Content-Type": "application/x-www-form-urlencoded"
     }
   };
@@ -87,28 +83,30 @@ function authCallback(req, res) {
   });
 
   clientRequest.on("error", function (err) {
-    respond(qs.stringify({error: "proxy-error"}));
+    respond(qs.stringify({error: "client-error"}));
   });
 
-  clientRequest.end(queryString);
+  clientRequest.end(query);
 }
 
-var server = http.createServer(function (req, res) {
-  var parsed = url.parse(req.url);
+var fileServer = new static.Server('./public');
+var httpServer = http.createServer(function (req, res) {
+  req.on('end', function () {
+    var parsed = url.parse(req.url);
 
-  if (req.method.toLowerCase() == "options") {
-    res.setHeader("Content-Length", 0);
-    res.end();
-  } else if (parsed.pathname.indexOf("/auth/readmill") === 0) {
-    authorize(req, res);
-  } else if (parsed.pathname.indexOf("/auth/readmill/callback") === 0) {
-    authCallback(req, res);
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
+    if (req.method.toLowerCase() === "options") {
+      res.setHeader("Content-Length", 0);
+      res.end();
+    } else if (parsed.pathname.indexOf("/auth/readmill/callback") === 0) {
+      authCallback(req, res);
+    } else if (parsed.pathname.indexOf("/auth/readmill") === 0) {
+      authorize(req, res);
+    } else {
+      fileServer.serve(req, res);
+    }
+  });
 });
 
 var PORT = ENV["PORT"] || 8000;
-server.listen(PORT);
+httpServer.listen(PORT);
 process.stdout.write("Server started at http://localhost:" + PORT + "\n");

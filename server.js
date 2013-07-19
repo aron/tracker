@@ -1,7 +1,9 @@
 var http   = require('http');
 var url    = require('url');
+var fs     = require('fs');
 var qs     = require('querystring');
 var static = require('node-static');
+var hogan  = require('hogan.js');
 var ENV    = process.env;
 
 var AUTH_HOST       = "readmill.com";
@@ -87,7 +89,7 @@ function authCallback(req, res) {
   clientRequest.end(query);
 }
 
-var fileServer = new static.Server('./public');
+var fileServer = new static.Server('./public', {cache: false});
 var httpServer = http.createServer(function (req, res) {
   req.on('end', function () {
     var parsed = url.parse(req.url);
@@ -99,6 +101,14 @@ var httpServer = http.createServer(function (req, res) {
       authCallback(req, res);
     } else if (parsed.pathname.indexOf("/auth/readmill") === 0) {
       authorize(req, res);
+    } else if (parsed.pathname === "/") {
+      var indexTemplate = hogan.compile(fs.readFileSync("./public/index.html").toString('utf-8'));
+
+      res.setHeader("Content-Type", "text/html");
+      res.end(indexTemplate.render({
+        auth_path: "/auth/readmill",
+        readmill_client_id: CLIENT_ID
+      }));
     } else {
       fileServer.serve(req, res);
     }

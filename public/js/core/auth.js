@@ -1,5 +1,5 @@
-define(['utils'], function () {
-  var utils = require('utils');
+define(['core/utils'], function () {
+  var utils = require('core/utils');
 
   return {
     authorize: function (window) {

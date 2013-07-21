@@ -5,10 +5,10 @@ requirejs.config({
   }
 });
 
-require(['auth', 'client', 'settings'], function () {
-  var auth = require('auth');
-  var Client = require('client');
-  var settings = require('settings').extract(document.head);
+require(['core/auth', 'core/client', 'core/settings'], function () {
+  var auth = require('core/auth'),
+      Client = require('core/client'),
+      settings = require('core/settings').extract(document.head);
 
   document.getElementById('login').addEventListener('click', function (event) {
     event.preventDefault();

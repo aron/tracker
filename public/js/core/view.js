@@ -1,11 +1,11 @@
-describe(['events', 'vendor/soak', 'jquery'], function () {
+define(['core/events', 'vendor/soak', 'jquery'], function () {
   var jQuery = require('jquery'),
       soak = require('vendor/soak'),
-      Events = require('events');
+      Events = require('core/events');
 
-  return soak.inherits(Events, {
+  return soak.inherit(Events, {
     constructor: function View(element, options) {
-      Object.apply(this, arguments);
+      Events.apply(this, arguments);
       this.el = element || document.createElement('div');
       this.$el = jQuery(element);
       this.options = soak.mixin({}, this.constructor.options, options);

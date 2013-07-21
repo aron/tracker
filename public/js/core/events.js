@@ -1,9 +1,10 @@
-describe(['jquery', 'vendor/soak'], function () {
+define(['jquery', 'vendor/soak'], function () {
   var jQuery = require('jquery'),
-      soak = require('soak');
+      soak = require('vendor/soak');
 
   return soak.inherit(Object, {
     constructor: function Events() {
+      Object.apply(this, arguments);
       this.hub = jQuery({});
     },
     on: function (topic, fn, context) {

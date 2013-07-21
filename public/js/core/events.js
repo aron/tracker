@@ -1,6 +1,7 @@
 define(['jquery', 'vendor/soak'], function () {
   var jQuery = require('jquery'),
-      soak = require('vendor/soak');
+      soak = require('vendor/soak'),
+      Base = soak.inherit.constructor(Object);
 
   return soak.inherit(Object, {
     constructor: function Events() {
@@ -18,5 +19,7 @@ define(['jquery', 'vendor/soak'], function () {
       var args = jQuery.makeArray(arguments).slice(1);
       this.hub.trigger(topic, args);
     }
+  }, {
+    extend: Base.extend
   });
 });

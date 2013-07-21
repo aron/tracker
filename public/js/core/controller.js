@@ -1,8 +1,7 @@
-define(['core/events', 'vendor/soak'], function () {
-  var Events = require('core/events'),
-      soak = require('vendor/soak');
+define(['core/events'], function () {
+  var Events = require('core/events');
 
-  return soak.inherit(Events, {
+  return Events.extend({
     constructor: function Controller() {
       Events.apply(this, arguments);
     }
